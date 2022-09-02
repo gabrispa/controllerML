@@ -1,0 +1,1 @@
+In this folder are stored the metrics taken by the monitor

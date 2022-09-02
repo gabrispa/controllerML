@@ -1,0 +1,1 @@
+in this folder is stored the information about the stretch (the difference in length between the djikstra path and the ML path)

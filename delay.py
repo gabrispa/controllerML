@@ -6,7 +6,7 @@ from ryu.controller.handler import MAIN_DISPATCHER, DEAD_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib import hub
-from ryu.topology.switches import Switches
+# from ryu.topology.switches import Switches
 from ryu.topology.switches import LLDPPacket
 
 # TESTING
@@ -15,8 +15,7 @@ from ryu.topology.switches import LLDPPacket
 import ast, csv, json, time
 import setting
 
-#import topology_discover_a
-import monitor
+# import monitor
 
 CONF = cfg.CONF
 
@@ -35,14 +34,15 @@ class Delay(app_manager.RyuApp):
         self.sending_echo_request_interval = 0.1
         self.sw_module = lookup_service_brick('switches')
         self.awareness = lookup_service_brick('awareness')
-        self.paths_calculator = lookup_service_brick('paths_calculator')
+        # self.paths_calculator = lookup_service_brick('paths_calculator')
         self.count = 0
         self.datapaths = {}
         self.echo_latency = {}
         self.link_delay = {}
         self.end_to_end_delay = {}  # {(src_ip, dst_ip): delay, }
         self.delay_dict = {}
-        self.measure_thread = hub.spawn_after(25, self._detector)
+        self.delay_dict = {}
+        self.measure_thread = hub.spawn_after(30, self._detector)
 
     @set_ev_cls(ofp_event.EventOFPStateChange,
                 [MAIN_DISPATCHER, DEAD_DISPATCHER])
@@ -68,12 +68,11 @@ class Delay(app_manager.RyuApp):
             self.count += 1
             self._send_echo_request()
             self.create_link_delay()
-            # self.paths_calculator = lookup_service_brick('paths_calculator')
-            if not self.paths_calculator:
-                self.paths_calculator = lookup_service_brick('paths_calculator')
-                self.paths_calculator.write_paths()
+            # Use new link delay to update paths
+            # if not self.paths_calculator:
+            #     self.paths_calculator = lookup_service_brick('paths_calculator')
+            #     self.paths_calculator.write_paths()
 
-            
             try:
                 self.awareness.shortest_paths = {}
             except:
@@ -211,6 +210,12 @@ class Delay(app_manager.RyuApp):
         # if self.awareness.link_to_port:
         #     self.write_dijkstra_paths()
             # self.calc_stretch()
+
+    def get_weight_dict(self):
+        '''
+        Return a weight dictionary of type { src: dst: weight, ... }
+        '''
+        return self.delay_dict
 
     def show_delay_statis(self):
         if self.awareness is None:

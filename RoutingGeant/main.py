@@ -6,7 +6,7 @@ import time
 import json
 
 def RL_forwarding(data, src, dst):
-    
+
     graph = get_dict(data)
 
     A = graph["A"]
@@ -28,7 +28,7 @@ def get_all_paths(data):
     graph = get_dict(data)
     links = graph["links"]
     sws = list(links.keys())  #switches list
-    
+
     paths = {}
     for i in sws:  #for each switch
         paths.setdefault(i, {})
@@ -37,15 +37,15 @@ def get_all_paths(data):
                 j = [j] #j diventa una lista con all'interno solo j stesso es. 8 -> [8]
                 time0 = time.time()
                 result = RL_forwarding(data,i,j)
-                
+
                 if j[0] not in paths[i]:
                     paths[i][j[0]] = result["all_routes"][j[-1]]
-    with open('/home/gabriele/controllerRL/RoutingGeant/paths.json','w') as json_file:
+    with open('./RoutingGeant/paths.json','w') as json_file:
         json.dump(paths, json_file, indent=2)
     time_end = time.time()
     total_time = time_end - time_init
-    
-    with open('/home/gabriele/controllerRL/RoutingGeant/times.txt','a') as txt_file:
+
+    with open('./RoutingGeant/times.txt','a') as txt_file:
         txt_file.write(str(total_time)+'\n')
 
     # For testing ---------------------------------

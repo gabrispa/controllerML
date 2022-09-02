@@ -4,17 +4,17 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.base.app_manager import lookup_service_brick
 from ryu.controller.handler import MAIN_DISPATCHER, DEAD_DISPATCHER
-from ryu.controller.handler import CONFIG_DISPATCHER
+# from ryu.controller.handler import CONFIG_DISPATCHER
 from ryu.controller.handler import set_ev_cls
-from ryu.topology import event, switches
-from ryu.ofproto.ether import ETH_TYPE_IP
-from ryu.topology.api import get_switch, get_link
+# from ryu.topology import event, switches
+# from ryu.ofproto.ether import ETH_TYPE_IP
+# from ryu.topology.api import get_switch, get_link
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib import hub
-from ryu.lib.packet import packet
-from ryu.lib.packet import arp
+# from ryu.lib.packet import packet
+# from ryu.lib.packet import arp
 
-import delay, topology_discover
+# import delay, topology_discover
 import ast, csv, json, time
 import setting
 
@@ -57,7 +57,7 @@ class Statistics(app_manager.RyuApp):
         self.awareness = lookup_service_brick('awareness')
         self.delay = lookup_service_brick('delay')
 
-        self.monitor_thread = hub.spawn_after(35, self.monitor)
+        self.monitor_thread = hub.spawn_after(31, self.monitor)
 
     @set_ev_cls(ofp_event.EventOFPStateChange,
                 [MAIN_DISPATCHER, DEAD_DISPATCHER])
@@ -79,19 +79,14 @@ class Statistics(app_manager.RyuApp):
         """
             Main entry method of monitoring traffic.
         """
-        
         while True:
-            print("\n\n\n\nSONO QUI\n\n\n\n\n")
-            
-            
-            
             self.stats['flow'] = {}
             self.stats['port'] = {}
             print("[Statistics Module Ok]")
             print(("[{0}]".format(self.count_monitor)))
             print("")
             if self.delay is None:
-                print('No monitor')
+                print('[INFO] Delay module not found. Checking again')
                 self.delay = lookup_service_brick('delay')
             for dp in list(self.datapaths.values()):
                 self.port_features.setdefault(dp.id, {}) #setdefault() returns the value of the item with the specified key
@@ -107,7 +102,6 @@ class Statistics(app_manager.RyuApp):
                 self.get_link_free_bw()
                 self.get_link_used_bw()
                 self.write_values()
-                #self.show_stat()
 
             hub.sleep(setting.MONITOR_PERIOD)
             if self.stats['port']:
@@ -157,8 +151,9 @@ class Statistics(app_manager.RyuApp):
             if key[0] == dpid and src_port == out_port:
                 dst_sw = key[1]
                 dst_port = self.awareness.link_to_port[key][1]
-                #print(dst_sw,dst_port)
+                # print(dst_sw,dst_port)
                 return (dst_sw, dst_port)
+        return None
 
     def get_link_bw(self, file, src_dpid, dst_dpid):
         fin = open(file, "r")
@@ -204,45 +199,36 @@ class Statistics(app_manager.RyuApp):
                     self.save_stats(self.flow_loss[dp], key, flow_loss, 5)
 
     def get_port_loss(self):
-        #Get loss_port
+        # Get loss_port
         bodies = self.stats['port']
         for dp in sorted(bodies.keys()):
             for stat in sorted(bodies[dp], key=attrgetter('port_no')):
                 key1 = (dp, stat.port_no)
-                key2 =  self.get_sw_dst(dp, stat.port_no)
-                #while(key2 == None):
-                #    print("\n\n\nKEY2 = NULL\n\n\n")
-                #    key2 = self.get_sw_dst(dp, stat.port_no)
-                #    time.sleep(1)
-                
-                if key2 and self.awareness.link_to_port and stat.port_no != 1 and stat.port_no != ofproto_v1_3.OFPP_LOCAL: #get loss form ports of network
-                    #key1 = (dp, stat.port_no)
+                key2 = self.get_sw_dst(dp, stat.port_no)
+                if key2 and self.port_stats[key1] and self.port_stats[key2] and \
+                    self.awareness.link_to_port and stat.port_no != 1 and stat.port_no != ofproto_v1_3.OFPP_LOCAL:
                     tmp1 = self.port_stats[key1]
                     tx_bytes_src = tmp1[-1][0]
                     tx_pkts_src = tmp1[-1][8]
 
-                    #key2 = self.get_sw_dst(dp, stat.port_no)
-                    if self.port_stats[key2]:
-                        tmp2 = self.port_stats[key2]
-                        rx_bytes_dst = tmp2[-1][1]
-                        rx_pkts_dst = tmp2[-1][9]
-                        loss_port = float(tx_pkts_src - rx_pkts_dst) / tx_pkts_src #loss rate
-                        values = (loss_port, key2)
-                        self.save_stats(self.port_loss[dp], key1, values, 5)
+                    tmp2 = self.port_stats[key2]
+                    rx_bytes_dst = tmp2[-1][1]
+                    rx_pkts_dst = tmp2[-1][9]
+                    loss_port = float(tx_pkts_src - rx_pkts_dst) / tx_pkts_src #loss rate
+                    values = (loss_port, key2)
+                    self.save_stats(self.port_loss[dp], key1, values, 5)
 
         #Calculates the total link loss and save it in self.link_loss[(node1,node2)]:loss
         for dp in list(self.port_loss.keys()):
             for port in self.port_loss[dp]:
                 key2 = self.port_loss[dp][port][-1][1]
-                #print(key2)
-                if key2:
-                    loss_src = self.port_loss[dp][port][-1][0]
-                    # tx_src = self.port_loss[dp][port][-1][1]
-                    loss_dst = self.port_loss[key2[0]][key2][-1][0]
-                    # tx_dst = self.port_loss[key2[0]][key2][-1][1]
-                    loss_l = (abs(loss_src) + abs(loss_dst)) / 2
-                    link = (dp, key2[0])
-                    self.link_loss[link] = loss_l*100.0 #loss in porcentage
+                loss_src = self.port_loss[dp][port][-1][0]
+                # tx_src = self.port_loss[dp][port][-1][1]
+                loss_dst = self.port_loss[key2[0]][key2][-1][0]
+                # tx_dst = self.port_loss[key2[0]][key2][-1][1]
+                loss_l = (abs(loss_src) + abs(loss_dst)) / 2
+                link = (dp, key2[0])
+                self.link_loss[link] = loss_l*100.0 #loss in porcentage
 
     def get_link_free_bw(self):
         #Calculates the total free bw of link and save it in self.link_free_bw[(node1,node2)]:link_free_bw
@@ -250,23 +236,20 @@ class Statistics(app_manager.RyuApp):
             for port in self.free_bandwidth[dp]:
                 free_bw1 = self.free_bandwidth[dp][port]
                 key2 = self.get_sw_dst(dp, port) #key2 = (dp,port)
-                if key2:
-                    free_bw2= self.free_bandwidth[key2[0]][key2[1]]
-                    link_free_bw = (free_bw1 + free_bw2)/2
-                    link = (dp, key2[0])
-                    self.link_free_bw[link] = link_free_bw
+                free_bw2= self.free_bandwidth[key2[0]][key2[1]]
+                link_free_bw = (free_bw1 + free_bw2)/2
+                link = (dp, key2[0])
+                self.link_free_bw[link] = link_free_bw
 
     def get_link_used_bw(self):
         #Calculates the total free bw of link and save it in self.link_free_bw[(node1,node2)]:link_free_bw
         for key in list(self.port_speed.keys()):
             used_bw1 = self.port_speed[key][-1]
-            
             key2 = self.get_sw_dst(key[0], key[1]) #key2 = (dp,port)
-            if key2:
-                used_bw2 = self.port_speed[key2][-1]
-                link_used_bw = (used_bw1 + used_bw2)/2
-                link = (key[0], key2[0])
-                self.link_used_bw[link] = link_used_bw
+            used_bw2 = self.port_speed[key2][-1]
+            link_used_bw = (used_bw1 + used_bw2)/2
+            link = (key[0], key2[0])
+            self.link_used_bw[link] = link_used_bw
 
 #---------------------CONTROL PLANE FUNCTIONS---------------------------------
 #---------------------STATISTICS MODULE FUNCTIONS ----------------------------

@@ -3,6 +3,7 @@ DISCOVERY_PERIOD = 10
 MONITOR_PERIOD = 10   # For monitoring traffic
 
 DELAY_DETECTING_PERIOD = 7
+FLOW_INSTALLATION_PERIOD = MONITOR_PERIOD
 
 TOSHOW = True	   # For showing information in terminal
 
@@ -16,4 +17,4 @@ BW = './bw_r.txt'
 TIMES = './times.txt'
 STRETCH_DIR = './stretch/'
 NET_INFO = './net_info.csv'
-METRICS_DIR = './Metrics/'
+METRICS_DIR = './Metrics'

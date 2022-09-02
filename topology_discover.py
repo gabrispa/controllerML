@@ -1,6 +1,4 @@
-from matplotlib._api import select_matching_signature
 import networkx as nx
-import matplotlib.pyplot as plt
 import time
 
 from ryu import cfg, utils
@@ -45,27 +43,27 @@ class TopologyDiscover(app_manager.RyuApp):
         super(TopologyDiscover, self).__init__(*args, **kwargs)
         self.topology_api_app = self
         self.name = "awareness"
-        self.link_to_port = {}                # {(src_dpid,dst_dpid):(src_port,dst_port),}
+        self.link_to_port = {}                # {(src_dpid, dst_dpid):(src_port,dst_port),}
         self.access_table = {}                # {(sw,port):(ip, mac),}
         self.switch_port_table = {}           # {dpid:set(port_num,),}
         self.access_ports = {}                # {dpid:set(port_num,),}
         self.interior_ports = {}              # {dpid:set(port_num,),}
+        self.datapaths = {}
         self.switches = []                    # self.switches = [dpid,]
-        self.shortest_paths = {}              # {dpid:{dpid:[[path],],},}
         self.pre_link_to_port = {}
         self.pre_access_table = {}
         self.length = 0
         self.graph = nx.DiGraph()
         self.initiation_delay = self.get_initiation_delay(4)
         self.start_time = time.time()
-        #self.discover_thread = hub.spawn_after(self.initiation_delay, self._discover)
-        self.discover_thread = hub.spawn( self._discover)
+        # self.discover_thread = hub.spawn_after(self.initiation_delay, self._discover)
+        self.discover_thread = hub.spawn(self._discover)
 
     def _discover(self):
         while True:
-            self.logger.info("[INFO] Started discovering routine")
             self.get_topology(None)
-            self.show_topology()
+            # print(self.link_to_port)
+            # self.show_topology()
             hub.sleep(setting.DISCOVERY_PERIOD)
 
     def add_flow(self, dp, priority, match, actions, idle_timeout=0, hard_timeout=0):
@@ -141,15 +139,19 @@ class TopologyDiscover(app_manager.RyuApp):
         if present_time - self.start_time < self.initiation_delay: #Set to 30s
             return
 
-        self.logger.info("[INFO] Getting topology information")
+        if not ev:
+            self.logger.info("[INFO] Started discovering routine")
+        else:
+            self.logger.info("[INFO] Getting topology information")
+
         switch_list = get_switch(self.topology_api_app, None)
         self.create_port_map(switch_list)
         time.sleep(0.5)
         self.switches = [sw.dp.id for sw in switch_list]
+        for sw in switch_list:
+            self.datapaths[sw.dp.id] = sw.dp
+            # self.switches.append(sw.dp.id)
         links = get_link(self.topology_api_app, None)
-        
-        #print(switch_list)
-        
         self.create_interior_links(links)
         self.create_access_ports()
         self.graph = self.get_graph(list(self.link_to_port.keys()))
@@ -238,7 +240,6 @@ class TopologyDiscover(app_manager.RyuApp):
         """
             Register access host info into access table.
         """
-        print("register for " + str(in_port) + " " + str(ip))
         if in_port in self.access_ports[dpid]:
             if (dpid, in_port) in self.access_table:
                 if self.access_table[(dpid, in_port)] == (ip, mac):
@@ -247,8 +248,10 @@ class TopologyDiscover(app_manager.RyuApp):
                     self.access_table[(dpid, in_port)] = (ip, mac)
                     return
             else:
+                print("[INFO] register for " + str(in_port) + " " + str(ip))
                 self.access_table.setdefault((dpid, in_port), None)
                 self.access_table[(dpid, in_port)] = (ip, mac)
+                print(self.access_table)
                 return
 
     def show_topology(self):

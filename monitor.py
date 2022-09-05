@@ -24,8 +24,8 @@ class Statistics(app_manager.RyuApp):
         A Ryu app for network monitoring. It retreieves statistics information
         through openflow of datapaths at the Data Plane.
         This class contains functions belonging to the Statistics module and
-        Flow Installation module of the Control Plane.
-        I also contains the functions corresponding to the Process Statistics
+        of the Control Plane.
+        It also contains the functions corresponding to the Process Statistics
         module of the Management Plane in order to adventage the monitoring
         threading for statistics processing.
     """
@@ -146,11 +146,15 @@ class Statistics(app_manager.RyuApp):
         return self.get_time(n_sec, n_nsec) - self.get_time(p_sec, p_nsec)
 
     def get_sw_dst(self, dpid, out_port):
-        for key in self.awareness.link_to_port:
-            src_port = self.awareness.link_to_port[key][0]
+        link_to_port = self.awareness.get_link_to_port()
+        if not link_to_port:
+            return None
+
+        for key in link_to_port:
+            src_port = link_to_port[key][0]
             if key[0] == dpid and src_port == out_port:
                 dst_sw = key[1]
-                dst_port = self.awareness.link_to_port[key][1]
+                dst_port = link_to_port[key][1]
                 # print(dst_sw,dst_port)
                 return (dst_sw, dst_port)
         return None
@@ -186,12 +190,15 @@ class Statistics(app_manager.RyuApp):
                                 key=lambda flow: (flow.match.get('ipv4_src'),flow.match.get('ipv4_dst')))
             for stat in list_flows:
                 out_port = stat.instructions[0].actions[0].port
-                if self.awareness.link_to_port and out_port != 1: #get loss form ports of network
+                if out_port != 1: # get loss form ports of network
                     key = (stat.match.get('ipv4_src'), stat.match.get('ipv4_dst'))
                     tmp1 = self.flow_stats[dp][key]
                     byte_count_src = tmp1[-1][1]
 
                     result = self.get_sw_dst(dp, out_port)
+                    if not result:
+                        continue
+
                     dst_sw = result[0]
                     tmp2 = self.flow_stats[dst_sw][key]
                     byte_count_dst = tmp2[-1][1]
@@ -203,10 +210,13 @@ class Statistics(app_manager.RyuApp):
         bodies = self.stats['port']
         for dp in sorted(bodies.keys()):
             for stat in sorted(bodies[dp], key=attrgetter('port_no')):
-                key1 = (dp, stat.port_no)
-                key2 = self.get_sw_dst(dp, stat.port_no)
-                if key2 and self.port_stats[key1] and self.port_stats[key2] and \
-                    self.awareness.link_to_port and stat.port_no != 1 and stat.port_no != ofproto_v1_3.OFPP_LOCAL:
+                if stat.port_no != 1 and stat.port_no != ofproto_v1_3.OFPP_LOCAL:
+                    # Topology discover should provide a funtion to get the tuple (key1, key2)
+                    key1 = (dp, stat.port_no)
+                    key2 = self.get_sw_dst(dp, stat.port_no)
+                    if not key2:
+                        continue
+
                     tmp1 = self.port_stats[key1]
                     tx_bytes_src = tmp1[-1][0]
                     tx_pkts_src = tmp1[-1][8]
@@ -309,6 +319,10 @@ class Statistics(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def port_stats_reply_handler(self, ev):
+        link_to_port = self.awareness.get_link_to_port()
+        if not link_to_port:
+            return
+
         a = time.time()
         body = ev.msg.body
         dpid = ev.msg.datapath.id
@@ -316,6 +330,7 @@ class Statistics(app_manager.RyuApp):
         self.stats['port'][dpid] = body
         self.free_bandwidth.setdefault(dpid, {})
         self.port_loss.setdefault(dpid, {})
+
         """
             Save port's stats information into self.port_stats.
             Calculate port speed and Save it.
@@ -334,7 +349,6 @@ class Statistics(app_manager.RyuApp):
              stat.rx_crc_err, stat.collisions,
              stat.duration_sec, stat.duration_nsec))
         """
-
         for stat in sorted(body, key=attrgetter('port_no')): #get the value of port_no form body
             port_no = stat.port_no
             key = (dpid, port_no) #src_dpid, src_port
@@ -343,7 +357,7 @@ class Statistics(app_manager.RyuApp):
             self.save_stats(self.port_stats, key, value, 5)
 
             if port_no != ofproto_v1_3.OFPP_LOCAL: #si es dif de puerto local del sw donde se lee port
-                if port_no != 1 and self.awareness.link_to_port :
+                if port_no != 1:
                     # Get port speed and Save it.
                     pre = 0
                     period = setting.MONITOR_PERIOD
@@ -357,8 +371,6 @@ class Statistics(app_manager.RyuApp):
 
                     #Get links capacities
                     file = setting.BW
-                    link_to_port = self.awareness.link_to_port
-
                     for k in list(link_to_port.keys()):
                         if k[0] == dpid:
                             if link_to_port[k][0] == port_no:
@@ -485,9 +497,11 @@ class Statistics(app_manager.RyuApp):
         '''
         # if setting.TOSHOW is False:
             # return
-
-        if _type == 'flow' and self.awareness.link_to_port:
+        if _type == 'flow':
             bodies = self.stats['flow']
+            if not bodies:
+                return
+
             print('datapath         ''   ip_src        ip-dst      '
                   'out-port packets  bytes  flow-speed(b/s)')
             print('---------------- ''  -------- ----------------- '
@@ -511,6 +525,9 @@ class Statistics(app_manager.RyuApp):
 
         if _type == 'port': #and self.awareness.link_to_port:
             bodies = self.stats['port']
+            if not bodies:
+                return
+
             print('\ndatapath  port '
                 '   rx-pkts     rx-bytes ''   tx-pkts     tx-bytes '
                 ' port-bw(Kb/s)  port-speed(Kb/s)  port-freebw(Kb/s) '

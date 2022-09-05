@@ -184,6 +184,12 @@ class TopologyDiscover(app_manager.RyuApp):
                     pass
         return _graph
 
+    def get_link_to_port(self):
+        """
+            Get link to port.
+        """
+        return self.link_to_port
+
     def get_initiation_delay(self, fanout):
         """
             Get initiation delay.

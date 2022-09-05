@@ -230,7 +230,7 @@ class FlowInstallation(app_manager.RyuApp):
         if result:
             # Host has been recorded in access table.
             datapath_dst, out_port = result[0], result[1]
-            datapath = self.datapaths[datapath_dst]
+            datapath = self.awareness.datapaths[datapath_dst]
             out = self.build_packet_out(datapath, ofproto.OFP_NO_BUFFER,
                                         ofproto.OFPP_CONTROLLER,
                                         out_port, msg.data)
@@ -238,14 +238,26 @@ class FlowInstallation(app_manager.RyuApp):
             self.logger.debug("Deliver ARP packet to knew host")
         else:
             # Should we know the host location?
-            # out_port = ofproto.OFPP_FLOOD
-            # out = self.build_packet_out(datapath, ofproto.OFP_NO_BUFFER,
-            #                              ofproto.OFPP_CONTROLLER,
-            #                              out_port, msg.data)
-            # datapath.send_msg(out)
+            out_port = ofproto.OFPP_FLOOD
+            out = self.build_packet_out(datapath, ofproto.OFP_NO_BUFFER,
+                                         ofproto.OFPP_CONTROLLER,
+                                         out_port, msg.data)
+            datapath.send_msg(out)
             pass
 
-    # It's should be a topology discover API
+    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+    def packet_in_handler(self, ev):
+        '''
+            In packet_in handler, we need to learn access_table by ARP and IP packets.
+            Therefore, the first packet from UNKOWN host MUST be ARP
+        '''
+        msg = ev.msg
+        pkt = packet.Packet(msg.data)
+        arp_pkt = pkt.get_protocol(arp.arp)
+        if isinstance(arp_pkt, arp.arp):
+            self.arp_forwarding(msg, arp_pkt.src_ip, arp_pkt.dst_ip)
+
+    # It should be a topology discover API
     def get_port_pair_from_link(self, link_to_port, src_dpid, dst_dpid):
         """
             Get port pair of link, so that controller can install flow entry.

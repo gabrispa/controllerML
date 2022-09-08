@@ -117,7 +117,6 @@ class TopologyDiscover(app_manager.RyuApp):
             reason = 'unknown'
 
         if arp_pkt:
-            print("arp_pkt " + arp_pkt.src_ip )
             arp_src_ip = arp_pkt.src_ip
             arp_dst_ip = arp_pkt.dst_ip #delay
             mac = arp_pkt.src_mac
@@ -162,7 +161,6 @@ class TopologyDiscover(app_manager.RyuApp):
             Get host location info ((datapath, port)) according to the host ip.
             self.access_table = {(sw,port):(ip, mac),}
         """
-        # print(self.access_table)
         for key in list(self.access_table.keys()):
             if self.access_table[key][0] == host_ip:
                 return key
@@ -257,7 +255,6 @@ class TopologyDiscover(app_manager.RyuApp):
                 print("[INFO] register for " + str(in_port) + " " + str(ip))
                 self.access_table.setdefault((dpid, in_port), None)
                 self.access_table[(dpid, in_port)] = (ip, mac)
-                print(self.access_table)
                 return
 
     def show_topology(self):

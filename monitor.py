@@ -246,20 +246,22 @@ class Statistics(app_manager.RyuApp):
             for port in self.free_bandwidth[dp]:
                 free_bw1 = self.free_bandwidth[dp][port]
                 key2 = self.get_sw_dst(dp, port) #key2 = (dp,port)
-                free_bw2= self.free_bandwidth[key2[0]][key2[1]]
-                link_free_bw = (free_bw1 + free_bw2)/2
-                link = (dp, key2[0])
-                self.link_free_bw[link] = link_free_bw
+                if key2:
+                    free_bw2= self.free_bandwidth[key2[0]][key2[1]]
+                    link_free_bw = (free_bw1 + free_bw2)/2
+                    link = (dp, key2[0])
+                    self.link_free_bw[link] = link_free_bw
 
     def get_link_used_bw(self):
         #Calculates the total free bw of link and save it in self.link_free_bw[(node1,node2)]:link_free_bw
         for key in list(self.port_speed.keys()):
             used_bw1 = self.port_speed[key][-1]
             key2 = self.get_sw_dst(key[0], key[1]) #key2 = (dp,port)
-            used_bw2 = self.port_speed[key2][-1]
-            link_used_bw = (used_bw1 + used_bw2)/2
-            link = (key[0], key2[0])
-            self.link_used_bw[link] = link_used_bw
+            if key2:
+                used_bw2 = self.port_speed[key2][-1]
+                link_used_bw = (used_bw1 + used_bw2)/2
+                link = (key[0], key2[0])
+                self.link_used_bw[link] = link_used_bw
 
 #---------------------CONTROL PLANE FUNCTIONS---------------------------------
 #---------------------STATISTICS MODULE FUNCTIONS ----------------------------

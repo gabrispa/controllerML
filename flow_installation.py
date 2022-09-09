@@ -60,45 +60,37 @@ class FlowInstallation(app_manager.RyuApp):
     def flow_installation(self):
         print("[INFO] Started flow installation routine")
         out_time= time.time()
-        for dp in self.awareness.switches:
-            for dp2 in self.awareness.switches:
-                if dp != dp2:
-                    ip_src = '10.0.0.'+str(dp)
-                    ip_dst = '10.0.0.'+str(dp2)
-                    self.forwarding(dp, ip_src, ip_dst, dp, dp2)
-                    time.sleep(0.0005)
+        access_table = self.awareness.access_table
+        for k in access_table.keys():
+            sw_src = k[0]
+            ip_src = access_table[k][0]
+            host_src_port = k[1]
+            for j in access_table.keys():
+                sw_dst = j[0]
+                ip_dst = access_table[j][0]
+                host_dst_port = j[1]
+                self.forwarding(ip_src, ip_dst, sw_src, sw_dst, host_src_port, host_dst_port)
         end_out_time = time.time()
         out_total_ = end_out_time - out_time
-        # print("FLow installation ends in: {0}s".format(out_total_))
         return
 
-    def forwarding(self, dpid, ip_src, ip_dst, src_sw, dst_sw):
+    def forwarding(self, ip_src, ip_dst, sw_src, sw_dst, host_src_port, host_dst_port):
         """
             Get paths and install them into datapaths.
         """
 
-        self.installed_paths.setdefault(dpid, {})
-        path = self.get_path(str(src_sw), str(dst_sw))
-        self.installed_paths[src_sw][dst_sw] = path
+        self.installed_paths.setdefault(sw_src, {})
+        if sw_dst == sw_src:
+            path = [sw_dst]
+        else:
+            path = self.get_path(str(sw_src), str(sw_dst))
+        self.installed_paths[sw_src][sw_dst] = path
         flow_info = (ip_src, ip_dst)
-        self.install_flow(self.awareness.datapaths, self.awareness.link_to_port, path, flow_info)
-
-    def request_stats(self, datapath): # It's Monitor responsabilities
-        self.logger.debug('send stats request: %016x', datapath.id)
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-
-        req = parser.OFPPortDescStatsRequest(datapath, 0) #for port description
-        datapath.send_msg(req)
-
-        req = parser.OFPFlowStatsRequest(datapath) #individual flow statistics
-        datapath.send_msg(req)
-
-        req = parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY)
-        datapath.send_msg(req)
+        self.install_flow(self.awareness.datapaths, self.awareness.link_to_port, path, flow_info,
+                           host_src_port, host_dst_port)
 
     def install_flow(self, datapaths, link_to_port, path,
-                     flow_info, data=None):
+                     flow_info, host_src_port, host_dst_port, data=None):
         init_time_install = time.time()
         '''
             Install flow entires.
@@ -109,13 +101,13 @@ class FlowInstallation(app_manager.RyuApp):
             self.logger.info("Path error!")
             return
 
-        in_port = 1
+        in_port = host_src_port
         first_dp = datapaths[path[0]]
 
         out_port = first_dp.ofproto.OFPP_LOCAL
         back_info = (flow_info[1], flow_info[0])
 
-        # Flow installing por middle datapaths in path
+        # Flow installing por middle datapaths nel path
         if len(path) > 2:
             for i in range(1, len(path)-1):
                 port = self.get_port_pair_from_link(link_to_port,
@@ -135,7 +127,7 @@ class FlowInstallation(app_manager.RyuApp):
                 self.logger.info("Port is not found")
                 return
             src_port = port_pair[1]
-            dst_port = 1 # I know that is the host port
+            dst_port = host_dst_port
             last_dp = datapaths[path[-1]]
             self.send_flow_mod(last_dp, flow_info, src_port, dst_port)
             self.send_flow_mod(last_dp, back_info, dst_port, src_port)
@@ -149,9 +141,9 @@ class FlowInstallation(app_manager.RyuApp):
             self.send_flow_mod(first_dp, flow_info, in_port, out_port)
             self.send_flow_mod(first_dp, back_info, out_port, in_port)
 
-            # src and dst on the same datapath
-        else:
-            out_port = 1
+        # src and dst on the same datapath
+        if len(path) == 1:
+            out_port = host_dst_port
             self.send_flow_mod(first_dp, flow_info, in_port, out_port)
             self.send_flow_mod(first_dp, back_info, out_port, in_port)
 

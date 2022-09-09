@@ -1,0 +1,10 @@
+h10 xterm -T "serverH10" -e iperf -s -p 5555 -i 1 &
+h1 xterm -T "clientH1" -e iperf -c 10.0.0.10 -p 5555 -t inf &
+h17 xterm -T "serverH17" -e iperf -s -p 5556 -i 1 &
+h9 xterm -T "clientH9" -e iperf -c 10.0.0.17 -p 5556 -t inf &
+h14 xterm -T "serverH14" -e iperf -s -p 5557 -i 1 &
+h12 xterm -T "clientH12" -e iperf -c 10.0.0.14 -p 5557 -t inf &
+h13 xterm -T "serverH13" -e iperf -s -p 5558 -i 1 &
+h15 xterm -T "clientH15" -e iperf -c 10.0.0.13 -p 5558 -t inf &
+h3 xterm -T "serverH3" -e iperf -s -p 5559 -i 1 &
+h19 xterm -T "clientH19" -e iperf -c 10.0.0.3 -p 5559 -t inf &

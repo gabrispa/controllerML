@@ -203,7 +203,7 @@ def myNetwork():
     info( '*** Post configure switches and hosts\n')
     dict1 ={}
     with open('./host_IP.json', 'w') as host_IP:
-     for i in range(23):
+     for i in range(24):
      	msg = 'h'+str(i+1)
      	host = net.get(msg)
      	ip = host.IP(None)

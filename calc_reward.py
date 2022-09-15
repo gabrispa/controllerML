@@ -1,10 +1,15 @@
 import pandas as pd
+import csv
 
 def calc_reward_avg(routes_complete):
     avg_reward_for_episode  = {}
     data = pd.read_csv("./net_info.csv")
     #print(data.loc[(data["node1"] == 1) & (data["node2"] == 7)]
 
+    file_rewards = open('./rewards_history', 'w')
+    header_ = ['episode','reward']
+    file = csv.writer(file_rewards, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    file.writerow(header_)
     
     for episode in range(len(routes_complete[1][2])):
         reward = 0
@@ -16,7 +21,9 @@ def calc_reward_avg(routes_complete):
                     num_paths += 1
                     
                     reward += calc_reward(routes_complete[src][dst][episode], data, src, dst)
-        print("Reward episodio ", episode + 1, " = ", float(reward/num_paths), "\n")
+        #print("Reward episodio ", episode + 1, " = ", float(reward/num_paths), "\n")
+        file.writerow([episode + 1, round(float(reward/num_paths),2)])
+        
                     
 def calc_reward(route, data, src, dst):
     r = 0

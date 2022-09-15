@@ -1,5 +1,6 @@
 import random
-from get_all_routes import get_best_nodes
+from get_all_routes import get_best_nodes, get_route
+#from get_all_routes import get_best_nodes, get_best_net, get_all_best_routes, get_cost, count_routes, get_route
 import numpy as np
 
 def update_Q(T,Q,current_state, next_state, alpha):
@@ -30,6 +31,10 @@ def Q_routing(T,Q,alpha,epsilon,n_episodes,start,end): #Fill Q table and explore
     # max_epsilon = 0.9
     # decay_rate = 0.001
     episode_hops = {}
+    
+    routes_complete = []
+    for i in range(n_episodes):
+        routes_complete.append([])
 
     #T is network info
     for e in range(1,n_episodes+1):     #per ogni episodio
@@ -37,7 +42,8 @@ def Q_routing(T,Q,alpha,epsilon,n_episodes,start,end): #Fill Q table and explore
         current_state = start
         goal = False
         stored_states = []
-
+	
+        #print("Prima dell'update, episodio ", e, "\n",Q)
         while not goal:
             #takes the next hops neighbours for state
             valid_moves = list(Q[current_state].keys())
@@ -60,6 +66,22 @@ def Q_routing(T,Q,alpha,epsilon,n_episodes,start,end): #Fill Q table and explore
 
             if next_state in end:
                 goal = True
+        
+        
+        ##QUI DEVO STAMPARE LA REWARD DI FINE EPISODIO PER UNA COPPIA SRC/DST
+        
+        #print("Dopo l'update, episodio ",e,"\n", Q)
+        nodes = get_best_nodes(Q,start,end) #get best nodes to reach dest
+        route = get_route(Q, start, end)
+        
+        routes_complete[e-1] = route
+        
+        #print("\nepisodio: ", e, " ", route) 
+        
+     
+    	
+        
+        
         #     print('Q-table:', Q)
         #     print('Switches', stored_states)
         #     episode_hops[e] = stored_states
@@ -73,4 +95,4 @@ def Q_routing(T,Q,alpha,epsilon,n_episodes,start,end): #Fill Q table and explore
         # e += 1
         # epsilon = min_epsilon + (max_epsilon - min_epsilon)*np.exp(-decay_rate*e)
         # print epsilon
-    return Q, epsilon
+    return Q, epsilon, routes_complete

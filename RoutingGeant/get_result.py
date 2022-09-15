@@ -3,13 +3,14 @@ from get_all_routes import get_best_nodes, get_best_net, get_all_best_routes, ge
 from collections import Counter
 
 def get_result(R,Q,alpha,epsilon,n_episodes,start,end):
-    Q, epsilon = Q_routing(R,Q,alpha,epsilon,n_episodes,start,end)  #Da qui in teoria ha già eseguito i 300 episodi
+    Q, epsilon, routes_complete = Q_routing(R,Q,alpha,epsilon,n_episodes,start,end)  #Da qui in teoria ha già eseguito i 300 episodi
     							#e quindi ha già una q table ottimale
     nodes = get_best_nodes(Q,start,end) #get best nodes to reach dest
     graph = get_best_net(Q,nodes) #get dict with the path for the best nodes
     route_len = len(get_route(Q,start,end)) #calculate number of nodes in best route
     routes = get_all_best_routes(graph,start,end,route_len+1)
     result = count_routes(routes)
+    
     
     ends_find = []
     for i in range(len(routes)):
@@ -27,4 +28,4 @@ def get_result(R,Q,alpha,epsilon,n_episodes,start,end):
             "cost":dict(Counter(cost)),
             "routes_number":result['routes_number'],
             "all_routes":result['all_routes']}
-    return res
+    return res, routes_complete

@@ -1,28 +1,46 @@
 from collections import Counter
 
-def get_single_dict(dic):
+def get_single_dict(dic, exclude):
     single_link = {}
-    min_value = min(dic.values())
-    for key in dic.keys():
-        if dic[key] == min_value:
-            single_link[key] = dic[key]
+    
+    new_dic = {k: dic[k] for k in set(list(dic.keys())) - set(exclude)}  #exclude from the possible values the one where you 
+    #print("\nescludi:",exclude, "\nDizionario funzione\n" ,new_dic)		#come from
+    
+    if not new_dic:
+        return 0
+    
+    min_value = min(new_dic.values())
+    
+    
+    for key in new_dic.keys():
+        if new_dic[key] == min_value:
+            single_link[key] = new_dic[key]
     return single_link.keys()    #torna gli switch che hanno il valore di Q Table più basso
 
 def get_best_nodes(Q,start,end):
-    next_level = [start]
+    next_level = [start]   
     node_use = [start]
-    while list(set(next_level) & set(end)) == []: #while dest is not in next level exploration do:
+   
+    	
+    while list(set(next_level) & set(end)) == []: #while dst is not in next level exploration do:  
         temp_level = []
+        
         for i in next_level:    #es siamo nello switch 1
-            temp_level += get_single_dict(Q[i])   #aggiungi a temp_level gli switch con valore di q table minore 
+            aux = get_single_dict(Q[i], node_use)
+            if(aux):
+                temp_level += aux  #aggiungi a temp_level gli switch con valore di q table minore 
+            else:
+                return list(set(node_use))
+        
         next_level = list(set(temp_level))
         node_use += next_level #get the whole next exploration level... all neighbors to explore
+        
     return list(set(node_use))
 
 def get_best_net(Q,nodes): #build a dict with the best route found
     best_net = {}
     for i in nodes:
-        best_net[i] = list(set( get_single_dict(Q[i]) ) & set(nodes))
+        best_net[i] = list(set( get_single_dict(Q[i], [0]) ) & set(nodes))
     return best_net
 
 def get_all_best_routes(graph,start,end,max_depth): #get all the routes that reach the dest

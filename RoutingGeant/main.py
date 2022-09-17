@@ -21,8 +21,8 @@ def RL_forwarding(data, src, dst):
     #print("Q iniziale: \n", Q)
 
     alpha = 0.9 #learning rate
-    epsilon = 0.8 #greedy policy
-    n_episodes = 100 #300
+    epsilon = 0.9 #greedy policy
+    n_episodes = 100 #300 
 
     return get_result(R,Q,alpha,epsilon,n_episodes,src,dst)
 

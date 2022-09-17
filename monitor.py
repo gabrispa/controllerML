@@ -49,6 +49,7 @@ class Statistics(app_manager.RyuApp):
         self.net_metrics= {}
         self.link_free_bw = {}
         self.link_used_bw = {}
+        self.links_bw = {}
         self.stats = {}
         self.port_features = {}
         self.free_bandwidth = {}
@@ -159,21 +160,26 @@ class Statistics(app_manager.RyuApp):
                 return (dst_sw, dst_port)
         return None
 
-    def get_link_bw(self, file, src_dpid, dst_dpid):
-        fin = open(file, "r")
-        bw_capacity_dict = {}
-        for line in fin:
+    def read_bw(self):
+        #Get links capacities
+        file_name = setting.BW
+        fd = open(file_name, "r")
+        for line in fd:
             a = line.split(',')
             if a:
-                s1 = a[0]
-                s2 = a[1]
+                src = int(a[0])
+                dst = int(a[1])
                 # bwd = a[2] #random capacities
                 bwd = a[3] #original caps
-                bw_capacity_dict.setdefault(s1,{})
-                bw_capacity_dict[str(a[0])][str(a[1])] = bwd
-        fin.close()
-        bw_link = bw_capacity_dict[str(src_dpid)][str(dst_dpid)]
-        return bw_link
+                self.links_bw.setdefault(src,{})
+                self.links_bw[src][dst] = float(bwd)
+        print(self.links_bw)
+        fd.close()
+
+    def get_link_bw(self, src_dpid, dst_dpid):
+        if not self.links_bw:
+            self.read_bw()
+        return self.links_bw[src_dpid][dst_dpid]
 
     def get_free_bw(self, port_capacity, speed):
         # freebw: Kbit/s
@@ -371,8 +377,6 @@ class Statistics(app_manager.RyuApp):
                     speed = self.get_speed(self.port_stats[key][-1][0] + self.port_stats[key][-1][1], pre, period) #speed in bits/s
                     self.save_stats(self.port_speed, key, speed, 5)
 
-                    #Get links capacities
-                    file = setting.BW
                     for k in list(link_to_port.keys()):
                         if k[0] == dpid:
                             if link_to_port[k][0] == port_no:
@@ -383,7 +387,7 @@ class Statistics(app_manager.RyuApp):
                                 # if len(list_dst_dpid) > 0:
                                 #     dst_dpid = list_dst_dpid[0][1]
                                 # -----------------------------------------
-                                bw_link = float(self.get_link_bw(file, dpid, dst_dpid))
+                                bw_link = self.get_link_bw(dpid, dst_dpid)
                                 port_state = self.port_features.get(dpid).get(port_no)
 
                                 if port_state:

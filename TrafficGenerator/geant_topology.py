@@ -24,7 +24,7 @@ def myNetwork():
                       ip='127.0.0.1',
                       protocol='tcp',
                       port=6633)
-                      
+
     info( '*** Add switches\n')
     s14 = net.addSwitch('s14', cls=OVSKernelSwitch)
     s7 = net.addSwitch('s7', cls=OVSKernelSwitch)
@@ -75,8 +75,8 @@ def myNetwork():
     h22 = net.addHost('h22', cls=Host, ip='10.0.0.22', defaultRoute=None)
     h23 = net.addHost('h23', cls=Host, ip='10.0.0.23', defaultRoute=None)
     h24 = net.addHost('h24', cls=Host, ip='10.0.0.24', defaultRoute=None)
-    
-    
+
+
 
     info( '*** Add links\n')
     net.addLink(s1, h1)
@@ -106,31 +106,33 @@ def myNetwork():
 #switch esterni che inviano 13-19-17-12-10
 #switch esterni che ricevono 1-3-14-15-9 quindi sono collegati a quelli che inviano solo tramite la rete
 #switch core 18-2-11-5
-    #net.addLink(s1, s3)
+#net.addLink(s1, s3)
     net.addLink(s1, s7)
     #net.addLink(s1, s16)
-    net.addLink(s2, s4)
-    net.addLink(s2, s7)
+    #net.addLink(s2, s4)
+    #net.addLink(s2, s7)
     #net.addLink(s2, s12)
     #net.addLink(s2, s13)
     net.addLink(s2, s18)
     net.addLink(s2, s23)
       #aggiunti
     net.addLink(s2, s11)
+    net.addLink(s2,s5)
     net.addLink(s2, s6)
-    #net.addLink(s3, s10)
+    net.addLink(s2,s21)
+    net.addLink(s3, s21)
     #net.addLink(s3, s11)
     #net.addLink(s3, s14)
-    net.addLink(s3, s21)
-    #net.addLink(s4, s16)
      #aggiunti
     #net.addLink(s4, s6)
     net.addLink(s4, s14)
-    net.addLink(s4, s20)
+    #net.addLink(s4, s20)
+    net.addLink(s4,s5)
     net.addLink(s5, s8)
-    net.addLink(s5, s16)
+    #net.addLink(s5, s16)
      #aggiunti
     net.addLink(s5, s11)
+    net.addLink(s5,s20)
      #net.addLink(s6, s7)
     net.addLink(s6, s19)
      #aggiunti
@@ -138,12 +140,11 @@ def myNetwork():
     net.addLink(s6, s18)
      #net.addLink(s7, s17)
      #net.addLink(s7, s19)
-    net.addLink(s7, s21)
+    #net.addLink(s7, s21)
     #aggiunti
-    net.addLink(s7, s18)
+    #net.addLink(s7, s18)
+    net.addLink(s7,s11)
     net.addLink(s8, s9)
-    #aggiunti
-    net.addLink(s8, s20)
     #net.addLink(s9, s15)
     #net.addLink(s9, s16)
     #net.addLink(s10, s11)
@@ -151,21 +152,21 @@ def myNetwork():
     net.addLink(s10, s16)
     #net.addLink(s10, s17)
     #aggiunti
-    net.addLink(s11, s20)
-    net.addLink(s11, s21)
-    net.addLink(s11, s22)
-    net.addLink(s11, s16)
+    #net.addLink(s11, s20)
+    #net.addLink(s11, s21)
+    #net.addLink(s11, s22)
+    #net.addLink(s11, s16)
+    net.addLink(s11,s18)
     net.addLink(s12, s22)
     #net.addLink(s13, s14)
     #net.addLink(s13, s17)
     #net.addLink(s13, s19)
     net.addLink(s15, s20)
+    net.addLink(s16,s18)
     #net.addLink(s17, s20)
     net.addLink(s17, s23)
-    net.addLink(s18, s21)
+    net.addLink(s18, s22)
     #net.addLink(s20, s22)
-    #aggiunti
-    net.addLink(s22, s23)
 
 
 #topos = { 'geant': ( lambda: Geant() )}

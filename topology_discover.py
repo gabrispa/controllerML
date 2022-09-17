@@ -121,14 +121,14 @@ class TopologyDiscover(app_manager.RyuApp):
             arp_dst_ip = arp_pkt.dst_ip #delay
             mac = arp_pkt.src_mac
             # Record the access infomation.
-            self.register_access_info(datapath.id, in_port, arp_src_ip, mac)
+            # self.register_access_info(datapath.id, in_port, arp_src_ip, mac)
 
         elif ip_pkt:
             ip_src_ip = ip_pkt.src
             eth = pkt.get_protocols(ethernet.ethernet)[0]
             mac = eth.src
             # Record the access infomation.
-            self.register_access_info(datapath.id, in_port, ip_src_ip, mac)
+            # self.register_access_info(datapath.id, in_port, ip_src_ip, mac)
         else:
             pass
 
@@ -155,6 +155,18 @@ class TopologyDiscover(app_manager.RyuApp):
         self.create_access_ports()
         self.graph = self.get_graph(list(self.link_to_port.keys()))
         # self.show_topology()
+
+    @set_ev_cls(event.EventHostAdd)
+    def add_host_handler(self, ev):
+        host = ev.host
+        if host.ipv4:
+            dpid = host.port.dpid
+            in_port = host.port.port_no
+            ip = host.ipv4[0]
+            mac = host.mac
+            self.access_table[(dpid, in_port)] = (ip, mac)
+            self.logger.info("[INFO] register for " + str(in_port) + " " + str(ip))
+            print(self.access_table)
 
     def get_host_location(self, host_ip):
         """

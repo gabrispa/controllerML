@@ -51,7 +51,9 @@ def get_all_paths(data):
                     paths[i][j[0]] = result["all_routes"][j[-1]]
     
     #print(routes_complete)
-    calc_reward_avg(routes_complete)
+    #calc_reward_avg(routes_complete)
+    with open('./routes_complete.json', 'w') as json_file:
+        json.dump(routes_complete, json_file, indent=2)
     
     with open('./RoutingGeant/paths.json','w') as json_file:
         json.dump(paths, json_file, indent=2)

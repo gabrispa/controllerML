@@ -1,5 +1,7 @@
+import sys
+sys.path.insert(0,'./RoutingGeant')
 import pandas as pd
-import csv
+import csv, json, ast
 from get_dict import normalize, normalize_path_cost
 
 def calc_reward_avg(routes_complete):
@@ -75,6 +77,25 @@ def calc_avg_stats_path(route, data):
             
     #print(avg_bwd,"\n", avg_delay, "\n", avg_loss, "\n\n")
     return float(avg_bwd/n_hops), float(avg_delay/n_hops), float(avg_loss/n_hops)
+
+
+
     
+if __name__ == '__main__':
+    file = './routes_complete.json'
+    try:
+        with open(file,'r') as json_file:
+            routes_complete = json.load(json_file)
+            routes_complete = ast.literal_eval(json.dumps(routes_complete))
+            
+            for key in list(routes_complete):
+                for key2 in list(routes_complete[key]):
+                    routes_complete[key][int(key2)] = routes_complete[key].pop(key2)
+                routes_complete[int(key)] = routes_complete.pop(key)
+            
+            print(routes_complete[1])
+            calc_reward_avg(routes_complete)
+    except ValueError as e: 
+        print(e)
         
         

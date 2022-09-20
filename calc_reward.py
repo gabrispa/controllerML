@@ -9,12 +9,12 @@ def calc_reward_avg(routes_complete):
     data = pd.read_csv("./net_info.csv")
     #print(data.loc[(data["node1"] == 1) & (data["node2"] == 7)]
 
-    file_rewards = open('./rewards_history', 'w')
+    file_rewards = open('./rewards_history.csv', 'w')
     header_ = ['episode','reward', 'avg_bwd', 'avg_delay', 'avg_loss']
     file = csv.writer(file_rewards, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
     file.writerow(header_)
     
-    for episode in range(len(routes_complete[1][2])):
+    for episode in range(40):
         reward = 0
         bwd = 0
         delay = 0
@@ -93,7 +93,7 @@ if __name__ == '__main__':
                     routes_complete[key][int(key2)] = routes_complete[key].pop(key2)
                 routes_complete[int(key)] = routes_complete.pop(key)
             
-            print(routes_complete[1])
+            #print(routes_complete[1])
             calc_reward_avg(routes_complete)
     except ValueError as e: 
         print(e)
